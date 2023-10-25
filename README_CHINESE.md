@@ -120,3 +120,17 @@ m.matched_data.sort_values("match_id").head(6)
 | 3002 | 12785     | 0.058824 | 10000       | 10000           | B     | 332.05      | 11.98%   | 10000     | 0           | B5        | 36 months | 0.489164 | 1        |
 | 2    | 2         | 1        | 40000       | 40000           | B     | 1328.2      | 11.98%   | 40000     | 1           | B5        | 36 months | 0.784762 | 2        |
 | 3085 | 14255     | 0.058824 | 40000       | 40000           | B     | 1328.2      | 11.98%   | 40000     | 0           | B5        | 36 months | 0.784762 | 2        |
+
+
+匹配结果评估
+
+离散变量,看各种占比 -> 覆盖率
+```python
+categorical_results = m.compare_categorical(return_table=True)
+```
+计算卡方分布
+
+连续变量,经验累计分布函数ECDF
+Empirical Cumulative Distribution Functions (ECDF)
+经验累积分布函数(ECDF)
+

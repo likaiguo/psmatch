@@ -1,4 +1,8 @@
 from __future__ import print_function
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
 from pysmatch import *
 import pysmatch.functions as uf
 from catboost import CatBoostClassifier
@@ -26,11 +30,13 @@ class Matcher:
         Useful for unique idenifiers
     """
 
-    def __init__(self, test, control, yvar, formula=None, exclude=[]):
+    def __init__(self, test, control, yvar, formula=None, exclude=None):
+        if exclude is None:
+            exclude = []
         # configure plots for ipynb
         plt.rcParams["figure.figsize"] = (10, 5)
         # variables generated during matching
-        aux_match = ['scores', 'match_id', 'weight', 'record_id']
+        aux_match = ['scores', 'match_id', 'weight', 'record_id', 'matched_count']
         # assign unique indices to test and control
         t, c = [i.copy().reset_index(drop=True) for i in (test, control)]
         t = t.dropna(axis=1, how="all")
@@ -49,7 +55,7 @@ class Matcher:
         self.data[yvar] = self.data[yvar].astype(int)  # should be binary 0, 1
         self.xvars = [i for i in self.data.columns if i not in self.exclude and i != yvar]
         self.data = self.data.dropna(subset=self.xvars)
-        self.matched_data = []
+        self.matched_data = pd.DataFrame()
         self.xvars_escaped = ["Q('{}')".format(x) for x in self.xvars]
         self.yvar_escaped = "Q('{}')".format(self.yvar)
         self.y, self.X = patsy.dmatrices('{} ~ {}'.format(self.yvar_escaped, '+'.join(self.xvars_escaped)),
@@ -63,6 +69,7 @@ class Matcher:
                                                                  [1, 0]),
                                                              key=lambda x: x[0])]
         print('Formula:\n{} ~ {}'.format(yvar, '+'.join(self.xvars)))
+        print(self.minority, self.majority)
         print('n majority:', len(self.data[self.data[yvar] == self.majority]))
         print('n minority:', len(self.data[self.data[yvar] == self.minority]))
 
@@ -151,6 +158,7 @@ class Matcher:
             self.xvars_escaped = ["Q('{}')".format(x) for x in self.xvars]
             self.yvar_escaped = "Q('{}')".format(self.yvar)
             self.formula = '{} ~ {}'.format(self.yvar_escaped, '+'.join(self.xvars_escaped))
+        # print('formula: ', self.formula)
         if balance:
             if nmodels is None:
                 # fit multiple models based on imbalance severity (rounded up to nearest tenth)
@@ -162,22 +170,19 @@ class Matcher:
             num_cores = int(mp.cpu_count())
             print("This computer has: " + str(num_cores) + " cores , The workers should be :" + str(
                 min(num_cores, n_jobs)))
+            func = None
             if self.model_type == 'line':
-                pool = Pool(min(num_cores, n_jobs))
-                pool.map(self.fit_balance_progress, range(self.nmodels))
-                pool.close()
-                pool.join()
-                print("\nAverage Accuracy:", "{}%".
-                      format(round(np.mean(self.model_accuracy) * 100, 2)))
+                func = self.fit_balance_progress
             elif self.model_type == 'tree':
-                pool = Pool(min(num_cores, n_jobs))
-                pool.map(self.fit_balance_progress_tree, range(self.nmodels))
-                pool.close()
-                pool.join()
-                print("\nAverage Accuracy:", "{}%".
-                      format(round(np.mean(self.model_accuracy) * 100, 2)))
+                func = self.fit_balance_progress_tree
             else:
                 print('wrong model_type arguement :' + self.model_type)
+            if func:
+                pool = Pool(min(num_cores, n_jobs))
+                pool.map(func, range(self.nmodels))
+                pool.close()
+                pool.join()
+                print("\nAverage Accuracy:", "{}%".format(round(np.mean(self.model_accuracy) * 100, 2)))
         else:
             # ignore any imbalance and fit one model
             print('Fitting 1 (Unbalanced) Model...')
@@ -257,8 +262,8 @@ class Matcher:
             print("Propensity Scores have not been calculated. Using defaults...")
             self.fit_scores()
             self.predict_scores()
-        test_scores = self.data[self.data[self.yvar] == True][['scores']]
-        ctrl_scores = self.data[self.data[self.yvar] == False][['scores']]
+        test_scores = self.data[self.data[self.yvar] is True][['scores']]
+        ctrl_scores = self.data[self.data[self.yvar] is False][['scores']]
         result, match_ids = [], []
         for i in range(len(test_scores)):
             # uf.progress(i+1, len(test_scores), 'Matching Control to Test...')
@@ -292,7 +297,7 @@ class Matcher:
         if not data:
             data = self.data
         minor, major = data[data[self.yvar] == self.minority], \
-                       data[data[self.yvar] == self.majority]
+            data[data[self.yvar] == self.majority]
         return major.sample(len(minor)).append(minor, sort=True).dropna()
 
     def plot_scores(self):
@@ -302,13 +307,21 @@ class Matcher:
         """
         assert 'scores' in self.data.columns, \
             "Propensity scores haven't been calculated, use Matcher.predict_scores()"
-        sns.distplot(self.data[self.data[self.yvar] == 0].scores, label='Control')
-        sns.distplot(self.data[self.data[self.yvar] == 1].scores, label='Test')
+        # sns.distplot(self.data[self.data[self.yvar] == 0].scores, label='Control')
+        # sns.distplot(self.data[self.data[self.yvar] == 1].scores, label='Test')
+
+        # sns.displot(self.data[self.data[self.yvar] == 0].scores, label='Control')
+        # sns.displot(self.data[self.data[self.yvar] == 1].scores, label='Test')
+
+        sns.histplot(self.data[self.data[self.yvar] == 0].scores, kde=True, label='Control', stat="density")
+        sns.histplot(self.data[self.data[self.yvar] == 1].scores, kde=True, label='Test', stat="density")
+
         plt.legend(loc='upper right')
         plt.xlim((0, 1))
         plt.title("Propensity Scores Before Matching")
         plt.ylabel("Percentage (%)")
         plt.xlabel("Scores")
+        plt.show()
 
     def prop_test(self, col):
         """
@@ -330,15 +343,13 @@ class Matcher:
 
         """
         if not uf.is_continuous(col, self.X) and col not in self.exclude:
-            pval_before = round(stats.chi2_contingency(self.prep_prop_test(self.data,
-                                                                           col))[1], 6)
-            pval_after = round(stats.chi2_contingency(self.prep_prop_test(self.matched_data,
-                                                                          col))[1], 6)
+            pval_before = round(stats.chi2_contingency(self.prep_prop_test(self.data, col))[1], 6)
+            pval_after = round(stats.chi2_contingency(self.prep_prop_test(self.matched_data, col))[1], 6)
             return {'var': col, 'before': pval_before, 'after': pval_after}
         else:
             print("{} is a continuous variable".format(col))
 
-    def compare_continuous(self, save=False, return_table=False):
+    def compare_continuous(self, save=False, return_table=True):
         """
         Plots the ECDFs for continuous features before and
         after matching. Each chart title contains test results
@@ -416,6 +427,7 @@ class Matcher:
                                                std_diff_med_after, std_diff_mean_after))
                 ax2.legend(loc="lower right")
                 plt.xlim((0, np.percentile(xta.x, 99)))
+                plt.show()
 
                 test_results.append({
                     "var": col,
@@ -443,7 +455,7 @@ class Matcher:
 
         return pd.DataFrame(test_results)[var_order] if return_table else None
 
-    def compare_categorical(self, return_table=False):
+    def compare_categorical(self, return_table=True, plot=True):
         """
         Plots the proportional differences of each enumerated
         discete column for test and control.
@@ -483,6 +495,7 @@ class Matcher:
         Chi-Square Test for Independence p-value before | after:
         {} | {}
         '''
+
         test_results = []
         for col in self.matched_data.columns:
             if not uf.is_continuous(col, self.X) and col not in self.exclude:
@@ -491,13 +504,13 @@ class Matcher:
                 df = dbefore.join(dafter)
                 test_results_i = self.prop_test(col)
                 test_results.append(test_results_i)
-
-                # plotting
-                df.plot.bar(alpha=.8)
-                plt.title(title_str.format(col, test_results_i["before"],
-                                           test_results_i["after"]))
-                lim = max(.09, abs(df).max().max()) + .01
-                plt.ylim((-lim, lim))
+                if plot:
+                    # plotting
+                    df.plot.bar(alpha=.8)
+                    plt.title(title_str.format(col, test_results_i["before"],
+                                               test_results_i["after"]))
+                    lim = max(.09, abs(df).max().max()) + .01
+                    plt.ylim((-lim, lim))
         return pd.DataFrame(test_results)[['var', 'before', 'after']] if return_table else None
 
     def prep_prop_test(self, data, var):
@@ -545,7 +558,7 @@ class Matcher:
         Returns the proportion of data retained after matching
         """
         return len(self.matched_data[self.matched_data[self.yvar] == self.minority]) * 1.0 / \
-               len(self.data[self.data[self.yvar] == self.minority])
+            len(self.data[self.data[self.yvar] == self.minority])
 
     def tune_threshold(self, method, nmatches=1, rng=np.arange(0, .001, .0001)):
         """
@@ -574,6 +587,7 @@ class Matcher:
         plt.ylabel("Proportion Retained")
         plt.xlabel("Threshold")
         plt.xticks(rng)
+        plt.show()
 
     def record_frequency(self):
         """
@@ -586,18 +600,18 @@ class Matcher:
             Frequency table of the number records
             matched once, twice, ..., etc.
         """
-        freqs = self.matched_data.groupby("record_id") \
-            .count().groupby("match_id").count() \
-            [["scores"]].reset_index()
+        # 计算每个实验组匹配了多少个对照组样本, 聚合看结果
+        freqs = self.matched_data.groupby("record_id").count().groupby("match_id").count()[["scores"]].reset_index()
         freqs.columns = ["freq", "n_records"]
         return freqs
 
     def assign_weight_vector(self):
-        record_freqs = self.matched_data.groupby("record_id") \
-            .count()[['match_id']].reset_index()
-        record_freqs.columns = ["record_id", "weight"]
+        # 匹配结果聚合,每个匹配的实验组的id,匹配到多少个对照组的id => matched_count
+        # 每个匹配到的record_id权重 = 1/matched_count
+        record_freqs = self.matched_data.groupby("record_id").count()[['match_id']].reset_index()
+        record_freqs.columns = ["record_id", "matched_count"]
         fm = record_freqs.merge(self.matched_data, on="record_id")
-        fm['weight'] = 1 / fm['weight']
+        fm['weight'] = 1 / fm['matched_count']
         self.matched_data = fm
 
     def _scores_to_accuracy(self, m, X, y):
