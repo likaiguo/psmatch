@@ -14,6 +14,7 @@ def drop_static_cols(df, yvar, cols=None):
         if n_unique == 1:
             df.drop(col, axis=1, inplace=True)
             sys.stdout.write('\rStatic column dropped: {}'.format(col))
+            print(f'移除了列: {col}, - {n_unique}')
     return df
   
   
