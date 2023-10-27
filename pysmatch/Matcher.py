@@ -30,7 +30,7 @@ class Matcher:
         Useful for unique idenifiers
     """
 
-    def __init__(self, test, control, yvar, formula=None, exclude=None):
+    def __init__(self, test, control, yvar, formula=None, exclude=None, id_column=None):
         if exclude is None:
             exclude = []
         # configure plots for ipynb
@@ -43,6 +43,8 @@ class Matcher:
         c = c.dropna(axis=1, how="all")
         c.index += len(t)
         self.data = t.dropna(axis=1, how='all').append(c.dropna(axis=1, how='all'), sort=True)
+        if id_column and id_column in self.data.columns:
+            self.data = self.data.set_index(id_column)
         self.control_color = "#1F77B4"
         self.test_color = "#FF7F0E"
         self.yvar = yvar
@@ -52,10 +54,13 @@ class Matcher:
         self.models = []
         self.swdata = None
         self.model_accuracy = []
+
         self.data[yvar] = self.data[yvar].astype(int)  # should be binary 0, 1
+
         self.xvars = [i for i in self.data.columns if i not in self.exclude and i != yvar]
         self.data = self.data.dropna(subset=self.xvars)
         self.matched_data = pd.DataFrame()
+
         self.xvars_escaped = ["Q('{}')".format(x) for x in self.xvars]
         self.yvar_escaped = "Q('{}')".format(self.yvar)
         self.y, self.X = patsy.dmatrices('{} ~ {}'.format(self.yvar_escaped, '+'.join(self.xvars_escaped)),
@@ -63,6 +68,7 @@ class Matcher:
         # self.xvars = [i for i in self.data.columns if i not in self.exclude]
         self.test = self.data[self.data[yvar] == True]
         self.control = self.data[self.data[yvar] == False]
+
         self.testn = len(self.test)
         self.controln = len(self.control)
         self.minority, self.majority = [i[1] for i in sorted(zip([self.testn, self.controln],
@@ -77,6 +83,7 @@ class Matcher:
         print("Fitting Models on Balanced Samples , model number :" + str(num))
         try:
             df = self.balanced_sample()
+
             df = pd.concat([uf.drop_static_cols(df[df[self.yvar] == 1], yvar=self.yvar),
                             uf.drop_static_cols(df[df[self.yvar] == 0], yvar=self.yvar)],
                            sort=True)
@@ -135,17 +142,16 @@ class Matcher:
             How many models should be fit?
             Score becomes the average of the <nmodels> models if nmodels > 1
 
+        model_type: str
+            value:tree , Use catboost model to calc score
+            value:line , Use line model to calc score
+            todo
+        n_jobs: int
+                How many workers should be worked
+
         Returns
         -------
         None
-
-        Args:
-            model_type: str
-                value:tree , Use catboost model to calc score
-                value:line , Use line model to calc score
-                todo
-            n_jobs: int
-                    How many workers should be worked
         """
         # reset models if refitting
         self.model_type = model_type
@@ -262,9 +268,12 @@ class Matcher:
             print("Propensity Scores have not been calculated. Using defaults...")
             self.fit_scores()
             self.predict_scores()
-        test_scores = self.data[self.data[self.yvar] is True][['scores']]
-        ctrl_scores = self.data[self.data[self.yvar] is False][['scores']]
+        # test_scores = self.data[self.data[self.yvar] == True][['scores']]
+        # ctrl_scores = self.data[self.data[self.yvar] == False][['scores']]
+        test_scores = self.data[self.data[self.yvar] == 1][['scores']]
+        ctrl_scores = self.data[self.data[self.yvar] == 0][['scores']]
         result, match_ids = [], []
+        # 循环????
         for i in range(len(test_scores)):
             # uf.progress(i+1, len(test_scores), 'Matching Control to Test...')
             match_id = i

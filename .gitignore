@@ -4,3 +4,5 @@
 .idea*
 
 loan_full.csv
+
+dist/
