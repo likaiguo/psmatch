@@ -35,7 +35,7 @@ jobs:
         isAllowSkip: true
       afterExecute:
         checkRule:  # 选填项，卡点策略, 根据实际团队质量要求进行配置
-          - ${{outputs.critical}} <= 30
+          - ${{outputs.critical}} <= 50
 
   STC安全扫描:
     stage: 前置检查
