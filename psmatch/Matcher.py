@@ -3,8 +3,8 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from pysmatch import *
-import pysmatch.functions as uf
+from psmatch import *
+import psmatch.functions as uf
 from catboost import CatBoostClassifier
 from multiprocessing.pool import ThreadPool as Pool
 import multiprocessing as mp
@@ -375,14 +375,14 @@ class Matcher:
         Kolmogorov-Smirnov Goodness of fit Test (KS-test)
             This test statistic is calculated on 1000
             permuted samples of the data, generating
-            an imperical p-value.  See pysmatch.functions.ks_boot()
+            an imperical p-value.  See psmatch.functions.ks_boot()
             This is an adaptation of the ks.boot() method in
             the R "Matching" package
             https://www.rdocumentation.org/packages/Matching/versions/4.9-2/topics/ks.boot
         Chi-Square Distance:
             Similarly this distance metric is calculated on
             1000 permuted samples.
-            See pysmatch.functions.grouped_permutation_test()
+            See psmatch.functions.grouped_permutation_test()
 
         Other included Stats:
         Standarized mean and median differences
@@ -478,7 +478,7 @@ class Matcher:
         Each chart title contains the results from a
         Chi-Square Test of Independence before and after
         matching.
-        See pysmatch.prop_test()
+        See psmatch.prop_test()
 
         Parameters
         ----------
@@ -584,7 +584,7 @@ class Matcher:
         method : str
             Method used for matching (use "random" for this method)
         nmatches : int
-            Max number of matches per record. See pysmatch.match()
+            Max number of matches per record. See psmatch.match()
         rng: : list / np.array()
             Grid of threshold values
 

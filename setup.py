@@ -11,18 +11,18 @@ dependencies = [
     'catboost' 
     ]
 
-VERSION = "0.0.0.6"
+VERSION = "0.0.1"
 
 setup(
-    name='pysmatch',
-    packages=['pysmatch'],
+    name='psmatch',
+    packages=['psmatch'],
     version=VERSION,
     description='Matching techniques for Observational Studies',
     author='Miao HanCheng',
     author_email='hanchengmiao@gmail.com',
-    url='https://github.com/mhcone/pysmatch',
-    download_url='https://github.com/mhcone/pysmatch/archive/{}.tar.gz'.format(VERSION),
-    keywords=['logistic', 'regression', 'matching', 'observational', 'study', 'causal', 'inference','pysmatch'],
+    url='https://github.com/mhcone/psmatch',
+    download_url='https://github.com/mhcone/psmatch/archive/{}.tar.gz'.format(VERSION),
+    keywords=['logistic', 'regression', 'matching', 'observational', 'study', 'causal', 'inference','psmatch'],
     include_package_data=True,
     install_requires=dependencies
 )
