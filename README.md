@@ -1,4 +1,4 @@
-`pysmatch`
+`psmatch`
 =====
 
 Based on  pymatch https://github.com/benmiroglio/pymatch  
@@ -7,14 +7,14 @@ The origin project has a few bugs and cannot connect with the creator.
 
 This project fixes bugs and adds parallel computing and model selection.
 
-中文文档 https://github.com/mhcone/pysmatch/blob/main/README_CHINESE.md
+中文文档 https://github.com/mhcone/psmatch/blob/main/README_CHINESE.md
 
 # Installation
 
 Install through pip!
 
 ```bash
-$ pip install pysmatch
+$ pip install psmatch
 ```
 
 #
@@ -44,7 +44,7 @@ This example, however, only goes through the matching procedure, which can be br
 ```python
 import warnings
 warnings.filterwarnings('ignore')
-from pysmatch.Matcher import Matcher
+from psmatch.Matcher import Matcher
 import pandas as pd
 import numpy as np
 

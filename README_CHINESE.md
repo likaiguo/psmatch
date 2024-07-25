@@ -1,4 +1,4 @@
-### pysmatch 
+### psmatch 
 
 本项目基于
 pymatch  https://github.com/benmiroglio/pymatch 进行修改；原项目无法运行且无法联系创建人
@@ -25,7 +25,7 @@ psm算法简介：https://zhuanlan.zhihu.com/p/152200488
 #### 安装
 
 ```shell
-pip install pysmatch
+pip install psmatch
 ```
 
 版本还在持续更新，目前最新版本为0.0.3
@@ -41,7 +41,7 @@ pip install pysmatch
 
 import warnings
 warnings.filterwarnings('ignore')
-from pysmatch.Matcher import Matcher
+from psmatch.Matcher import Matcher
 import pandas as pd
 import numpy as np
 ```
