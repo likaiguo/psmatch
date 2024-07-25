@@ -13,8 +13,8 @@ def drop_static_cols(df, yvar, cols=None):
         n_unique = len(np.unique(df[col]))
         if n_unique == 1:
             df.drop(col, axis=1, inplace=True)
-            sys.stdout.write('\rStatic column dropped: {}'.format(col))
-            print(f'移除了列: {col}, - {n_unique}')
+            sys.stdout.write('\rStatic column dropped: {} '.format(col))
+            print(f'移除了列: {col}, - 只有一个值: {n_unique}')
     return df
   
   

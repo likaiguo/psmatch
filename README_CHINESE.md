@@ -6,6 +6,7 @@ pymatch  https://github.com/benmiroglio/pymatch 进行修改；原项目无法�
 
 1. 模型可选择基于catboost的树模型（支持分类变量）和常见的线性模型
 2. 模型增加并行计算功能，模型数量多的情况下加快执行速度
+3. todo: match优化，a: 循环方式-低效; b: 有无放回实现;
 
 psm算法简介：https://zhuanlan.zhihu.com/p/152200488
 
