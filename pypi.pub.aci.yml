@@ -28,7 +28,7 @@ jobs:
         - ansible/*
         - config/*
         - "**config.py**"
-      codePath: "./myodps" # 选填项，选择扫描目录
+      codePath: "./psmatch" # 选填项，选择扫描目录
     config:
       execute:
         timeout: 600 # 选填项，任务超时时间
@@ -44,7 +44,7 @@ jobs:
       tenantName: null
     config:
       execute:
-        isAllowSkip: true
+        isAllowSkip: false
 
   构建并发布到测试库:
     stage: 构建&发布到测试库

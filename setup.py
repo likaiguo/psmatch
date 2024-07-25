@@ -8,8 +8,8 @@ dependencies = [
     'matplotlib',
     'pandas',
     'numpy',
-    'catboost' 
-    ]
+    'catboost'
+]
 
 VERSION = "0.0.1"
 
@@ -19,10 +19,10 @@ setup(
     version=VERSION,
     description='Matching techniques for Observational Studies',
     author='Li kaiguo',
-    author_email='kaiguo.lkg@antfin.com',
-    url='https://github.com/mhcone/psmatch',
-    download_url='https://github.com/mhcone/psmatch/archive/{}.tar.gz'.format(VERSION),
-    keywords=['logistic', 'regression', 'matching', 'observational', 'study', 'causal', 'inference','psmatch'],
+    author_email='likaiguo',
+    url='https://github.com/likaiguo/pysmatch/tree/master',
+    download_url='https://github.com/likaiguo/pysmatch/archive/{}.tar.gz'.format(VERSION),
+    keywords=['logistic', 'regression', 'matching', 'observational', 'study', 'causal', 'inference', 'psmatch'],
     include_package_data=True,
     install_requires=dependencies
 )
