@@ -235,7 +235,7 @@ class Matcher:
                                                    verbose=None)]
         self.data['scores'] = scores / self.nmodels
 
-    def match(self, threshold=0.001, nmatches=1, method='min', max_rand=10):
+    def match(self, threshold=0.001, nmatches=1, method='min', max_rand=10, replace=False):
         """
         Finds suitable match(es) for each record in the minority
         dataset, if one exists. Records are exlcuded from the final
@@ -289,7 +289,7 @@ class Matcher:
                 continue
             # randomly choose nmatches indices, if len(matches) > nmatches
             select = nmatches if method != 'random' else np.random.choice(range(1, max_rand + 1), 1)
-            chosen = np.random.choice(matches.index, min(select, nmatches), replace=False)
+            chosen = np.random.choice(matches.index, min(select, nmatches), replace=replace)
             result.extend([test_scores.index[i]] + list(chosen))
             match_ids.extend([i] * (len(chosen) + 1))
         self.matched_data = self.data.loc[result]
@@ -309,7 +309,7 @@ class Matcher:
             data[data[self.yvar] == self.majority]
         return major.sample(len(minor)).append(minor, sort=True).dropna()
 
-    def plot_scores(self):
+    def plot_scores(self, stage='before'):
         """
         Plots the distribution of propensity scores before matching between
         our test and control groups
@@ -321,13 +321,19 @@ class Matcher:
 
         # sns.displot(self.data[self.data[self.yvar] == 0].scores, label='Control')
         # sns.displot(self.data[self.data[self.yvar] == 1].scores, label='Test')
+        if stage == 'before':
+            data = self.data
+            stage = 'Before'
+        else:
+            data = self.matched_data
+            stage = 'After'
 
-        sns.histplot(self.data[self.data[self.yvar] == 0].scores, kde=True, label='Control', stat="density")
-        sns.histplot(self.data[self.data[self.yvar] == 1].scores, kde=True, label='Test', stat="density")
+        sns.histplot(data[data[self.yvar] == 0].scores, kde=True, label='Control', stat="density")
+        sns.histplot(data[data[self.yvar] == 1].scores, kde=True, label='Test', stat="density")
 
         plt.legend(loc='upper right')
         plt.xlim((0, 1))
-        plt.title("Propensity Scores Before Matching")
+        plt.title(f"Propensity Scores {stage} Matching")
         plt.ylabel("Percentage (%)")
         plt.xlabel("Scores")
         plt.show()
@@ -588,9 +594,11 @@ class Matcher:
 
         """
         results = []
-        for i in rng:
-            self.match(method=method, nmatches=nmatches, threshold=i)
-            results.append(self.prop_retained())
+        for idx, threshold in enumerate(rng):
+            self.match(method=method, nmatches=nmatches, threshold=threshold)
+            result = self.prop_retained()
+            print(f'{idx} / {len(rng)} - {threshold} finished', result)
+            results.append(result)
         plt.plot(rng, results)
         plt.title("Proportion of Data retained for grid of threshold values")
         plt.ylabel("Proportion Retained")
@@ -635,3 +643,23 @@ class Matcher:
                                                                     thread_count=-1,
                                                                     verbose=None)]]
         return (y.to_numpy().T == preds).sum() * 1.0 / len(y)
+
+
+class PSM(object):
+
+    def __init__(self, data, yvar, exclude=None, id_column=None, seed=20231025,
+
+                 # match
+                 ):
+        test = data[data[yvar] == 1]
+        control = data[data[yvar] == 0]
+
+        m = Matcher(test, control, yvar=yvar, exclude=exclude, id_column=id_column)
+
+        m.fit_scores(balance=True, nmodels=1, n_jobs=5, model_type='tree')
+        m.predict_scores()
+
+        np.random.seed(seed)
+        m.match(method="min", nmatches=3, threshold=0.0005)
+
+        self.matcher = m
